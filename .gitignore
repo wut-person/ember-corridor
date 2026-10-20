@@ -1,0 +1,36 @@
+# ===== 本项目 .gitignore =====
+# 说明：这是一个零依赖的 HTML5 游戏，仓库里只保留「能直接跑起来的东西」+「源码」。
+# 体积大的中间产物（渲染重复副本、测试截图、编辑器缓存）都不上传。
+
+# ---------- 历史快照（每个 30~70 MB，本地留档用） ----------
+_snapshot-*/
+
+# ---------- Godot 编辑器 / 渲染缓存 ----------
+.godot-sandbox/
+.godot/
+*.import
+_render.log
+_f.log
+_f.err
+_p.log
+_r.log
+_r.err
+
+# ---------- 重复的精灵图副本 ----------
+# assets/hero/ 与 assets/hero-fine/ 才是游戏实际加载的图；
+# godot-voxel/sheets*/ 是渲染输出目录，内容与上面完全一致，不上传以免仓库翻倍。
+godot-voxel/sheets/
+godot-voxel/sheets-fine/
+godot-voxel/_probe/
+
+# ---------- 测试产物 ----------
+tools/shots/
+!docs/screenshots/
+
+# ---------- 系统 / 编辑器杂项 ----------
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log
+*.tmp
+node_modules/

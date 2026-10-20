@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>余烬回廊 · 横板肉鸽原型</title>
+<link rel="stylesheet" href="css/global.css" />
+<link rel="stylesheet" href="css/ui.css" />
+<link rel="stylesheet" href="css/game.css" />
+</head>
+<body>
+
+<!-- ============ 启动加载 ============ -->
+<div id="boot-screen">
+  <div class="boot-emblem"><i></i><i></i><i></i></div>
+  <div class="boot-title">余 烬 回 廊</div>
+  <div class="boot-sub">EMBER CORRIDOR · 横板肉鸽原型 v0.1</div>
+  <div class="boot-bar"><b id="boot-fill"></b></div>
+  <div class="boot-log" id="boot-log"></div>
+</div>
+
+<!-- ============ 屏幕容器 ============ -->
+<div id="screen-root" aria-live="polite"></div>
+
+<!-- ============ 浮层：提示 / 详情 / 弹窗 ============ -->
+<div id="toast-layer"></div>
+<div id="tooltip-layer"></div>
+<div id="modal-layer"></div>
+
+<noscript><div class="noscript">本原型需要启用 JavaScript 才能运行。</div></noscript>
+
+<script src="js/data/weapons.js"></script>
+<script src="js/data/clothing.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/enemies.js"></script>
+<script src="js/data/creatures.js"></script>
+<script src="js/data/resources.js"></script>
+<script src="js/data/ruins.js"></script>
+<script src="js/data/quests.js"></script>
+<script src="js/data/titles.js"></script>
+<script src="js/core/util.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/core/sprites.js"></script>
+<script src="js/core/icons.js"></script>
+<script src="js/ui/kit.js"></script><script src="js/ui/screen-login.js"></script>
+<script src="js/ui/screen-home.js"></script>
+<script src="js/ui/screen-lobby.js"></script>
+<script src="js/ui/screen-character.js"></script>
+<script src="js/ui/screen-inventory.js"></script>
+<script src="js/ui/screen-quests.js"></script>
+<script src="js/ui/screen-mods.js"></script>
+<script src="js/game/world.js"></script>
+<script src="js/ui/mapview.js"></script>
+<script src="js/game/worldview.js"></script>
+<script src="js/ui/screen-world.js"></script>
+<script src="js/game/engine.js"></script>
+<script src="js/game/boot.js"></script>
+<script src="js/core/bootstrap.js"></script>
+</body>
+</html>

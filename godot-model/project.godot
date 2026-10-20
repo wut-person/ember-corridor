@@ -1,0 +1,23 @@
+; Godot 4 项目 · 余烬回廊 2D 角色建模（矢量骨骼）
+; 独立工程：用 GDScript 程序化生成 2D 矢量角色（Polygon2D + Skeleton2D），与 2D 像素游戏本体互不影响。
+
+config_version=5
+
+[application]
+
+config/name="余烬回廊 · 2D 角色模型"
+config/description="程序化生成的 2D 矢量骨骼角色（余烬剑姬 / 铁壁游侠），支持待机 / 奔跑 / 三段连招动画与多角度查看。"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1440
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0.043, 0.055, 0.082, 1)
+anti_aliasing/quality/msaa_2d=2
