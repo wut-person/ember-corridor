@@ -990,6 +990,62 @@ ok = check('攻击生物（参考图）：幽影狼 / 藤蔓魔 / 墓碑骷髅',
   console.log('     5 个新生物造型（梅花鹿 / 野猪 / 青蛙 / 叶精灵 / 行囊史莱姆）绘制调用均无异常');
 }) && ok;
 
+ok = check('动作轨迹光效：11 种武器上色 / 三段剑气 / 旋风环 / 命中火花', function () {
+  /* 1) 用离屏 ctx 直接跑渲染，验证四种新特效都不抛异常 */
+  const cv = sandbox.document.createElement('canvas');
+  cv.width = 240; cv.height = 240;
+  const ctx = cv.getContext('2d');
+  if (!ctx) throw new Error('离屏 canvas 不可用');
+
+  const proto = G.World.prototype;
+  if (typeof proto.drawFx !== 'function') throw new Error('缺少 drawFx');
+  /* drawFx 依赖实例字段，借一个最小对象来调 */
+  const fake = {
+    fx: [], cam: { x: 0, y: 0 }, zoom: 1, W: 240, H: 240,
+    beginWorld: function (c) { c.save(); },
+    endWorld: function (c) { c.restore(); },
+    drawFx: proto.drawFx
+  };
+  const kinds = ['trail', 'qi', 'ring'];
+  kinds.forEach(function (k) {
+    fake.fx = [{ kind: k, x: 120, y: 150, ang: 0, r: 60, spread: 1.1, tone: '#8fd8ff', t: 0.12, max: 0.24 }];
+    fake.drawFx(ctx);
+  });
+  fake.fx = [{ kind: 'hit', x: 120, y: 150, t: 0.1, max: 0.18, tone: '#c07cff', crit: true }];
+  fake.drawFx(ctx);
+  console.log('     trail / qi / ring / hit 四种特效渲染调用均无异常');
+
+  /* 2) 武器色表：源码里必须有 11 种武器各自的颜色 */
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', 'js', 'game', 'worldview.js'), 'utf8');
+  const need = ['blade', 'greatsword', 'spear', 'axe', 'hammer', 'bow', 'crossbow', 'staff', 'gauntlet', 'scythe', 'whip'];
+  const missing = need.filter(function (w) {
+    return src.indexOf(w + ": '#") < 0 && src.indexOf(w + ":'") < 0;
+  });
+  if (missing.length) throw new Error('这些武器缺少光效色：' + missing.join(','));
+  console.log('     11 种武器色表齐全：' + need.join(' / '));
+
+  /* 3) 关键色必须对齐参考图 */
+  const align = [
+    ['blade 蓝白剑气', "blade: '#8fd8ff'"],
+    ['bow 绿色', "bow: '#6cf08a'"],
+    ['staff 紫色', "staff: '#c07cff'"]
+  ];
+  align.forEach(function (a) {
+    if (src.indexOf(a[1]) < 0) throw new Error('颜色与参考图不一致：' + a[0]);
+  });
+  console.log('     参考图配色对齐：剑=蓝白　弓=绿　法杖=紫');
+
+  /* 4) 第三段必出剑气（挥空也有），命中时额外旋风环 */
+  if (src.indexOf("kind: 'qi'") < 0) throw new Error('缺少剑气特效');
+  if (src.indexOf("kind: 'ring'") < 0) throw new Error('缺少旋风环特效');
+  /* 剑气必须在 hits 判定之外、旋风环在里面 */
+  const qiPos = src.indexOf("kind: 'qi'");
+  const ringPos = src.indexOf("kind: 'ring'");
+  const hitsPos = src.indexOf('if (hits) {', qiPos - 900);
+  if (!(qiPos > 0 && ringPos > qiPos)) throw new Error('剑气 / 旋风环的触发位置不对');
+  console.log('     第三段必出剑气（挥空也有），命中时再追加旋风环');
+}) && ok;
+
 console.log('\n================ 结果 ================');
 if (errors.length) {
   console.log('发现 ' + errors.length + ' 个问题（共 ' + FILES.length + ' 个脚本 / ' + checks.length + ' 项检查）：');

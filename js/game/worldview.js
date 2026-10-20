@@ -8,6 +8,20 @@
   const U = G.U;
   const TILE = function () { return G.WORLD.TILE; };
 
+  /* =========================================================
+     动作轨迹光效：按武器类型决定颜色（对齐参考图）
+       剑 / 大剑 -> 蓝白剑气　　长枪 -> 青　　斧 / 锤 -> 橙红
+       弓 / 弩  -> 绿　　　　　法杖 -> 紫　　镰 -> 紫　　鞭 -> 朱红
+     ========================================================= */
+  const FX_TONE = {
+    blade: '#8fd8ff', greatsword: '#7fc4ff', spear: '#9ef0e8',
+    axe: '#ff9a52', hammer: '#ffb347',
+    bow: '#6cf08a', crossbow: '#8cf0a8',
+    staff: '#c07cff', gauntlet: '#ff8a3c',
+    scythe: '#b06cff', whip: '#ff6b52'
+  };
+  function fxTone(wtype) { return FX_TONE[wtype] || '#8fd8ff'; }
+
   G.World = function (cv) {
     this.cv = cv;
     this.ctx = cv.getContext('2d');
@@ -832,9 +846,23 @@
           hits += 1;
         }
       }
+      /* ---- 动作轨迹光效：三层弧线残影（按武器上色）---- */
+      const tone = fxTone(p.wtype);
+      this.fx.push({
+        kind: 'trail', x: p.x, y: p.y, ang: ang, r: reach,
+        spread: spread, tone: tone, combo: p.comboStep, t: 0.24, max: 0.24
+      });
+      /* 第三段必出剑气 —— 这是招式的视觉签名（参考图的「上挑」），挥空也有 */
+      if (p.comboStep === 3) {
+        this.fx.push({ kind: 'qi', x: p.x, y: p.y, ang: ang, r: reach, tone: tone, t: 0.36, max: 0.36 });
+      }
       if (hits) {
         this.shake = 5;
-        this.fx.push({ kind: 'slash', x: p.x, y: p.y, ang: ang, r: reach, t: 0.2, max: 0.2 });
+        /* 命中第三段再加一圈旋风环 + 更强震动（参考图的「旋风斩」）*/
+        if (p.comboStep === 3) {
+          this.fx.push({ kind: 'ring', x: p.x, y: p.y, r: reach * 1.1, tone: tone, t: 0.34, max: 0.34 });
+          this.shake = 8;
+        }
       }
     },
 
@@ -846,7 +874,7 @@
       cr.x += dx / d * 5; cr.y += dy / d * 5;
       this.floats.push({ x: cr.x, y: cr.y - cr.size * 0.9, t: 0.8,
         text: (crit ? '✦' : '') + dmg, color: crit ? '#ffd479' : '#ffffff', size: crit ? 18 : 13 });
-      this.fx.push({ kind: 'hit', x: cr.x, y: cr.y - cr.size * 0.4, t: 0.18, max: 0.18 });
+      this.fx.push({ kind: 'hit', x: cr.x, y: cr.y - cr.size * 0.4, t: 0.18, max: 0.18, tone: fxTone(this.player.wtype), crit: crit });
       G.Audio.play(crit ? 'crit' : 'hit');
       /* 被打会跑开（善良生物掉好感，中立会还手一下） */
       cr.fleeT = 3.0;
@@ -878,7 +906,7 @@
       const d = Math.hypot(dx, dy) || 1;
       m.x += dx / d * 6; m.y += dy / d * 6;
       this.floats.push({ x: m.x, y: m.y - 22, t: 0.8, text: (crit ? '✦' : '') + dmg, color: crit ? '#ffd479' : '#ffffff', size: crit ? 18 : 13 });
-      this.fx.push({ kind: 'hit', x: m.x, y: m.y - 10, t: 0.18, max: 0.18 });
+      this.fx.push({ kind: 'hit', x: m.x, y: m.y - 10, t: 0.18, max: 0.18, tone: fxTone(this.player.wtype), crit: crit });
       G.Audio.play(crit ? 'crit' : 'hit');
       if (m.hp <= 0) this.killMob(m);
     },
@@ -1496,9 +1524,142 @@
         const k = f.t / f.max;
         c.save();
         if (f.kind === 'hit') {
+          /* 命中火花：外圈用武器色，暴击时更亮更大 */
+          const tone0 = f.tone || '#ffd479';
+          const rr0 = (1 - k) * 20 + (f.crit ? 12 : 5);
+          c.globalAlpha = k * 0.55;
+          c.fillStyle = tone0;
+          c.beginPath(); c.arc(f.x, f.y, rr0, 0, Math.PI * 2); c.fill();
           c.globalAlpha = k;
-          c.fillStyle = '#ffd479';
-          c.beginPath(); c.arc(f.x, f.y, (1 - k) * 14 + 3, 0, Math.PI * 2); c.fill();
+          c.fillStyle = f.crit ? '#fff6d8' : '#ffd479';
+          c.beginPath(); c.arc(f.x, f.y, rr0 * 0.45, 0, Math.PI * 2); c.fill();
+          /* 四向迸射的小碎线 */
+          c.strokeStyle = tone0;
+          c.lineWidth = 1.6;
+          c.globalAlpha = k * 0.85;
+          for (let j = 0; j < 4; j++) {
+            const a2 = j / 4 * Math.PI * 2 + 0.4;
+            const r1 = rr0 * 0.7, r2 = rr0 * 1.35;
+            c.beginPath();
+            c.moveTo(f.x + Math.cos(a2) * r1, f.y + Math.sin(a2) * r1);
+            c.lineTo(f.x + Math.cos(a2) * r2, f.y + Math.sin(a2) * r2);
+            c.stroke();
+          }
+        } else if (f.kind === 'trail') {
+          /* 挥砍残影：暗描边 + 亮芯，三层弧线形成运动模糊
+             （参考图是暗背景，本作是亮草地 —— 必须描边才看得清） */
+          const tone1 = f.tone || '#8fd8ff';
+          const sw = (f.spread || 1.0) * 0.95;
+          const grow = 0.86 + (1 - k) * 0.40;
+          c.lineCap = 'round';
+          const a0 = f.ang - sw * (0.55 + k * 0.45);
+          const a1 = f.ang + sw * (0.55 + k * 0.45);
+          const rad = f.r * grow;
+          /* ① 暗底描边（让亮色在浅色地面上也跳出来） */
+          c.globalAlpha = k * 0.55;
+          c.strokeStyle = 'rgba(10,16,26,.85)';
+          c.lineWidth = 26 + k * 10;
+          c.beginPath(); c.arc(f.x, f.y - 8, rad, a0, a1); c.stroke();
+          /* ② 外层色辉光 */
+          c.globalAlpha = k * 0.42;
+          c.strokeStyle = tone1;
+          c.lineWidth = 18 + k * 8;
+          c.beginPath(); c.arc(f.x, f.y - 8, rad, a0, a1); c.stroke();
+          /* ③ 中层实色 */
+          c.globalAlpha = k * 0.88;
+          c.lineWidth = 8.5 + k * 4.0;
+          c.beginPath(); c.arc(f.x, f.y - 8, rad, a0, a1); c.stroke();
+          /* ④ 内芯白线 */
+          c.globalAlpha = k * 1.0;
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 2.6 + k * 2.0;
+          c.beginPath(); c.arc(f.x, f.y - 8, rad, a0, a1); c.stroke();
+          /* ⑤ 运动拖尾：沿弧线撒几段渐短的短线 */
+          c.strokeStyle = tone1;
+          c.lineWidth = 3;
+          for (let t2 = 0; t2 < 4; t2++) {
+            const a4 = a0 + (a1 - a0) * (0.12 + t2 * 0.2);
+            c.globalAlpha = k * (0.5 - t2 * 0.1);
+            c.beginPath();
+            c.moveTo(f.x + Math.cos(a4) * rad * 0.82, f.y - 8 + Math.sin(a4) * rad * 0.82);
+            c.lineTo(f.x + Math.cos(a4) * rad * 1.12, f.y - 8 + Math.sin(a4) * rad * 1.12);
+            c.stroke();
+          }
+          /* ⑥ 刀尖亮星 */
+          c.globalAlpha = k * 0.95;
+          c.fillStyle = '#ffffff';
+          const tipA = f.ang + sw * 0.55;
+          const tipX = f.x + Math.cos(tipA) * rad, tipY = f.y - 8 + Math.sin(tipA) * rad;
+          c.beginPath(); c.arc(tipX, tipY, 3.0 + k * 3.4, 0, Math.PI * 2); c.fill();
+          c.globalAlpha = k * 0.5;
+          c.fillStyle = tone1;
+          c.beginPath(); c.arc(tipX, tipY, 6.0 + k * 6.0, 0, Math.PI * 2); c.fill();
+        } else if (f.kind === 'qi') {
+          /* 剑气：一道月牙向前飞出并张开 */
+          const tone2 = f.tone || '#8fd8ff';
+          const prog = 1 - k;
+          const dist = f.r * 0.55 * prog;
+          const cx2 = f.x + Math.cos(f.ang) * dist;
+          const cy2 = f.y - 8 + Math.sin(f.ang) * dist;
+          const rad2 = f.r * (0.72 + prog * 0.55);
+          c.lineCap = 'round';
+          /* 暗底描边 */
+          c.globalAlpha = k * 0.5;
+          c.strokeStyle = 'rgba(10,16,26,.85)';
+          c.lineWidth = 30 * k + 10;
+          c.beginPath(); c.arc(cx2, cy2, rad2, f.ang - 0.92, f.ang + 0.92); c.stroke();
+          /* 外辉光 */
+          c.globalAlpha = k * 0.42;
+          c.strokeStyle = tone2;
+          c.lineWidth = 22 * k + 6;
+          c.beginPath(); c.arc(cx2, cy2, rad2, f.ang - 0.92, f.ang + 0.92); c.stroke();
+          /* 中层实色 */
+          c.globalAlpha = k * 0.85;
+          c.lineWidth = 9 * k + 2.5;
+          c.beginPath(); c.arc(cx2, cy2, rad2, f.ang - 0.92, f.ang + 0.92); c.stroke();
+          /* 内芯亮线 */
+          c.globalAlpha = k * 1.0;
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 3.2 * k + 1.0;
+          c.beginPath(); c.arc(cx2, cy2, rad2, f.ang - 0.92, f.ang + 0.92); c.stroke();
+          /* 月牙内侧再补一道短弧，增加厚度 */
+          c.globalAlpha = k * 0.55;
+          c.strokeStyle = tone2;
+          c.lineWidth = 5 * k + 1.5;
+          c.beginPath(); c.arc(cx2, cy2, rad2 * 0.86, f.ang - 0.62, f.ang + 0.62); c.stroke();
+        } else if (f.kind === 'ring') {
+          /* 旋风环：一圈向外扩的椭圆环（俯视角用椭圆） */
+          const tone3 = f.tone || '#8fd8ff';
+          const prog3 = 1 - k;
+          const rx = f.r * (0.55 + prog3 * 1.0);
+          const ry = rx * 0.46;
+          /* 暗底 */
+          c.globalAlpha = k * 0.45;
+          c.strokeStyle = 'rgba(10,16,26,.8)';
+          c.lineWidth = 18 * k + 5;
+          c.beginPath(); c.ellipse(f.x, f.y - 6, rx, ry, 0, 0, Math.PI * 2); c.stroke();
+          /* 实色环 */
+          c.globalAlpha = k * 0.9;
+          c.strokeStyle = tone3;
+          c.lineWidth = 9 * k + 2.5;
+          c.beginPath(); c.ellipse(f.x, f.y - 6, rx, ry, 0, 0, Math.PI * 2); c.stroke();
+          /* 内白环 */
+          c.globalAlpha = k * 0.65;
+          c.strokeStyle = '#ffffff';
+          c.lineWidth = 2.6 * k + 1.0;
+          c.beginPath(); c.ellipse(f.x, f.y - 6, rx * 0.88, ry * 0.88, 0, 0, Math.PI * 2); c.stroke();
+          /* 放射短线 */
+          c.globalAlpha = k * 0.8;
+          c.strokeStyle = tone3;
+          c.lineWidth = 3.4;
+          for (let j = 0; j < 8; j++) {
+            const a3 = j / 8 * Math.PI * 2 + prog3 * 1.6;
+            const px3 = f.x + Math.cos(a3) * rx, py3 = f.y - 6 + Math.sin(a3) * ry;
+            c.beginPath();
+            c.moveTo(px3, py3);
+            c.lineTo(px3 + Math.cos(a3) * 16 * k, py3 + Math.sin(a3) * 7 * k);
+            c.stroke();
+          }
         } else if (f.kind === 'slash') {
           c.globalAlpha = k * 0.7;
           c.strokeStyle = '#dff0ff';
