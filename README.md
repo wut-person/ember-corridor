@@ -1,8 +1,17 @@
 # 余烬回廊 · Ember Corridor
 
-一款**横板肉鸽（Roguelike）小游戏的可玩原型**。纯前端、零依赖、零外部素材：所有图标是内联生成的 SVG，所有角色 / 敌人 / 场景是代码绘制的像素精灵，音效是 WebAudio 现场合成。
+**🎮 在线试玩：<https://wut-person.github.io/ember-corridor/>**
 
-**直接双击 `index.html` 即可运行**（无需服务器、无需构建）。推荐用 Edge / Chrome 打开后按 `F11` 全屏。
+一款**开放世界沙盒 RPG**（俯视角）+ 原始横版肉鸽闯关的可玩原型。纯前端、零依赖：所有图标是内联生成的 SVG，所有角色 / 生物 / 场景是代码绘制的像素精灵，音效是 WebAudio 现场合成。
+
+**两种方式都能玩**：
+
+| 方式 | 操作 |
+|---|---|
+| **在线（推荐）** | 打开 <https://wut-person.github.io/ember-corridor/> |
+| **本地** | 直接双击 `index.html`（无需服务器、无需构建），按 `F11` 全屏 |
+
+![开放世界](docs/screenshots/00-live-github-pages.png)
 
 ---
 
@@ -480,7 +489,17 @@ cp godot-voxel/sheets/*.png assets/hero/
 node tools/probe-title.js
 ```
 
-当前结果：**29 个脚本加载正常、20 项功能冒烟全部通过、15 项旋转 / 9 项生物 / 7 项采集 / 5 项遗迹测试通过、13 项边界场景通过、角色动画 60 FPS、0 个控制台错误**。
+当前结果：**29 个脚本加载正常、21 项功能冒烟全部通过、15 项旋转 / 9 项生物 / 7 项采集 / 5 项遗迹 / 5 项新生物测试通过、13 项边界场景通过、13 个自检套件全绿、线上版本 10/10 通过、角色动画 60 FPS、0 个控制台错误**。
+
+### 验证线上版本
+
+改了东西推到 GitHub 后，用这个脚本确认**线上真的能玩**（而不是只看 HTTP 200）：
+
+```bash
+node tools/live-test.js
+```
+
+它会从 `https://wut-person.github.io/ember-corridor/` 加载游戏，验证：29 个脚本加载 → 登录 → 进大世界 → 生物生成 → 精灵图可下载 → 帧率，并截图到 `docs/screenshots/00-live-github-pages.png`。
 
 ---
 
